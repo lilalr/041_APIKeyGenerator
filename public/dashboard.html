@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue-dark: #1d4ed8;
+        --blue-light: #3b82f6;
+        --bg: #eef4ff;
+        --surface: #ffffff;
+        --text: #1e293b;
+        --text-light: #64748b;
+        --border: #dbe3f5;
+        --danger: #dc2626;
+      }
+
+      body {
+        background: var(--bg);
+        margin: 0;
+        font-family: Inter, sans-serif;
+        padding: 30px;
+      }
+
+      .dashboard-container {
+        max-width: 1200px;
+        margin: auto;
+        background: var(--surface);
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 16px;
+        border-bottom: 2px solid var(--border);
+      }
+
+      .header h1 {
+        margin: 0;
+        color: var(--blue-dark);
+        font-size: 1.8rem;
+      }
+
+      #logoutBtn {
+        background: var(--danger);
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.95rem;
+      }
+
+      #logoutBtn:hover {
+        background: #b91c1c;
+      }
+
+      h2 {
+        margin-top: 40px;
+        color: var(--text);
+        border-left: 4px solid var(--blue);
+        padding-left: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 18px;
+        font-size: 0.95rem;
+      }
+
+      th {
+        background: var(--blue);
+        color: white;
+        padding: 12px;
+        text-align: left;
+      }
+
+      td {
+        border: 1px solid var(--border);
+        padding: 10px;
+      }
+
+      tr:nth-child(even) {
+        background: #f6f9ff;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="dashboard-container">
+      <div class="header">
+        <h1>Admin Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+      </div>
+
+      <!-- LIST USER -->
+      <h2>User List</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Start Date</th>
+              <th>API Key IDs</th>
+            </tr>
+          </thead>
+          <tbody id="user-list"></tbody>
+        </table>
+      </div>
+
+      <!-- LIST API KEY -->
+      <h2>API Key List</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>API Key</th>
+              <th>Status</th>
+              <th>User ID</th>
+              <th>Email</th>
+              <th>Expires At</th>
+            </tr>
+          </thead>
+          <tbody id="apikey-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("adminToken");
+
+      const userListBody = document.getElementById("user-list");
+      const apiKeyListBody = document.getElementById("apikey-list");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      // Logout
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("adminToken");
+        window.location.href = "/admin.html";
+      });
+
+      // Wajib login
+      if (!token) {
+        alert("Silakan login dulu!");
+        window.location.href = "/admin.html";
+      }
+
+      fetchAllData();
+
+      async function fetchAllData() {
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        };
+
+        try {
+          const [userRes, keyRes] = await Promise.all([
+            fetch("/api/admin/users", { headers }),
+            fetch("/api/admin/apikeys", { headers }),
+          ]);
+
+          if (userRes.status === 401) throw new Error("Token habis, login lagi.");
+
+          const users = await userRes.json();
+          const keys = await keyRes.json();
+
+          renderUsers(users);
+          renderApiKeys(keys);
+        } catch (err) {
+          alert(err.message);
+          localStorage.removeItem("adminToken");
+          window.location.href = "/admin.html";
+        }
+      }
+
+      function renderUsers(users) {
+        userListBody.innerHTML = "";
+        if (users.length === 0) {
+          userListBody.innerHTML =
+            '<tr><td colspan="6">Tidak ada user.</td></tr>';
+          return;
+        }
+
+        users.forEach((u) => {
+          userListBody.innerHTML += `
+            <tr>
+              <td>${u.id}</td>
+              <td>${u.firstname}</td>
+              <td>${u.lastname}</td>
+              <td>${u.email}</td>
+              <td>${u.start_date?.split("T")[0] || "N/A"}</td>
+              <td>${u.api_key_ids?.join(", ") || "-"}</td>
+            </tr>`;
+        });
+      }
+
+      function renderApiKeys(keys) {
+        apiKeyListBody.innerHTML = "";
+        if (keys.length === 0) {
+          apiKeyListBody.innerHTML =
+            '<tr><td colspan="6">Tidak ada API key.</td></tr>';
+          return;
+        }
+
+        keys.forEach((k) => {
+          apiKeyListBody.innerHTML += `
+            <tr>
+              <td>${k.id}</td>
+              <td>${k.api_key}</td>
+              <td>${k.status}</td>
+              <td>${k.user_id || "-"}</td>
+              <td>${k.user_email || "-"}</td>
+              <td>${k.expires_at?.split("T")[0] || "-"}</td>
+            </tr>`;
+        });
+      }
+    </script>
+  </body>
+</html>
