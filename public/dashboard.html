@@ -168,7 +168,7 @@
         try {
           const [userRes, keyRes] = await Promise.all([
             fetch("/api/admin/users", { headers }),
-            fetch("/api/admin/apikeys", { headers }),
+            fetch("/api/admin/apikey", { headers }),
           ]);
 
           if (userRes.status === 401) throw new Error("Token habis, login lagi.");
