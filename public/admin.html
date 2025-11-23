@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login</title>
+
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue-dark: #1d4ed8;
+        --blue-light: #3b82f6;
+        --bg: #f0f4ff;
+        --surface: #ffffff;
+        --text: #1e293b;
+        --text-light: #64748b;
+        --border: #e2e8f0;
+        --success: #16a34a;
+        --danger: #dc2626;
+      }
+
+      body {
+        background: var(--bg);
+        font-family: Inter, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        width: 90%;
+        max-width: 430px;
+        background: var(--surface);
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      h1 {
+        color: var(--blue-dark);
+        font-size: 1.7rem;
+        margin-bottom: 10px;
+      }
+
+      p {
+        color: var(--text-light);
+        margin-top: 0;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        text-align: left;
+        margin-top: 16px;
+      }
+
+      .form-group label {
+        font-size: 0.9rem;
+        color: var(--text-light);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-top: 6px;
+        font-size: 0.95rem;
+      }
+
+      button {
+        width: 100%;
+        background: var(--blue);
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        margin-top: 22px;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        background: var(--blue-dark);
+      }
+
+      #adminStatusMessage {
+        margin-top: 12px;
+        height: 20px;
+        font-size: 0.9rem;
+        color: var(--success);
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Admin Login</h1>
+      <p>Masukkan email & password untuk masuk ke dashboard admin.</p>
+
+      <div class="form-group">
+        <label>Email Admin</label>
+        <input type="email" id="adminEmail" placeholder="admin@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPassword" placeholder="••••••••" />
+      </div>
+
+      <button id="adminLoginBtn">Login Admin</button>
+      <div id="adminStatusMessage"></div>
+
+      <p style="margin-top: 25px;">
+        Belum punya akun?
+        <a href="/admin_register.html">Buat admin baru</a>
+      </p>
+    </div>
+
+    <script>
+      const emailInput = document.getElementById("adminEmail");
+      const passwordInput = document.getElementById("adminPassword");
+      const statusMessage = document.getElementById("adminStatusMessage");
+      const loginBtn = document.getElementById("adminLoginBtn");
+
+      function show(msg, error = false) {
+        statusMessage.style.color = error
+          ? "var(--danger)"
+          : "var(--success)";
+        statusMessage.textContent = msg;
+      }
+
+      loginBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!email || !password) {
+          show("Email dan password wajib diisi!", true);
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
+
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          show(data.error || "Login gagal", true);
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Login Admin";
+          return;
+        }
+
+        show("Login sukses! Mengarahkan...");
+
+        // SIMPAN TOKEN KE LOCALSTORAGE
+        localStorage.setItem("adminToken", data.token);
+
+        setTimeout(() => {
+          window.location.href = "/dashboard.html";
+        }, 1200);
+      });
+    </script>
+  </body>
+</html>
