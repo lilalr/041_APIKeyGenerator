@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-R" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lila API Key Generator</title>
+
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue-dark: #1d4ed8;
+        --blue-light: #3b82f6;
+        --bg: #f0f4ff;
+        --surface: #ffffff;
+        --text: #1e293b;
+        --text-light: #64748b;
+        --border: #e2e8f0;
+        --success: #16a34a;
+        --danger: #dc2626;
+      }
+
+      body {
+        background: var(--bg);
+        font-family: Inter, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        width: 90%;
+        max-width: 450px;
+        background: var(--surface);
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      h1 {
+        color: var(--blue-dark);
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+
+      button {
+        background: var(--blue);
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        background: var(--blue-dark);
+      }
+
+      textarea {
+        width: 100%;
+        height: 90px;
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        resize: none;
+        font-family: monospace;
+      }
+
+      .form-group {
+        text-align: left;
+        margin-top: 16px;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-top: 6px;
+      }
+
+      #statusMessage {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        height: 20px;
+      }
+
+      a button {
+        width: 100%;
+        margin-top: 18px;
+        background: var(--blue-light);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>API Key Generator</h1>
+
+      <button id="generateBtn">Generate Key</button>
+      <textarea id="apiKeyArea" placeholder="API Key muncul di sini..." readonly></textarea>
+
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" id="firstname" />
+      </div>
+
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" id="lastname" />
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" />
+      </div>
+
+      <button id="saveBtn" style="width: 100%; margin-top: 16px;">Save User</button>
+
+      <div id="statusMessage"></div>
+
+      <a href="/admin.html">
+        <button>Admin Panel</button>
+      </a>
+    </div>
+
+    <script>
+      let generatedKeyId = null;
+
+      const generateBtn = document.getElementById("generateBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const apiKeyArea = document.getElementById("apiKeyArea");
+      const statusMessage = document.getElementById("statusMessage");
+
+      function show(message, danger = false) {
+        statusMessage.style.color = danger ? "var(--danger)" : "var(--success)";
+        statusMessage.textContent = message;
+      }
+
+      // GENERATE KEY
+      generateBtn.addEventListener("click", async () => {
+        show("Generating...");
+
+        const res = await fetch("/generate-apikey");
+        const data = await res.json();
+
+        if (data.apiKey && data.id) {
+          apiKeyArea.value = data.apiKey;
+          generatedKeyId = data.id;
+          show("Key generated!");
+        } else {
+          show("Failed generate.", true);
+        }
+      });
+
+      // SAVE USER
+      saveBtn.addEventListener("click", async () => {
+        const firstname = document.getElementById("firstname").value;
+        const lastname = document.getElementById("lastname").value;
+        const email = document.getElementById("email").value;
+
+        if (!firstname || !lastname || !email || !generatedKeyId) {
+          show("Tolong isi semua field + generate key!", true);
+          return;
+        }
+
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstname,
+            lastname,
+            email,
+            apikey_id: generatedKeyId,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          show(data.error || "Gagal menyimpan user", true);
+          return;
+        }
+
+        show("Berhasil! User terdaftar.");
+        apiKeyArea.value = "";
+        document.getElementById("firstname").value = "";
+        document.getElementById("lastname").value = "";
+        document.getElementById("email").value = "";
+        generatedKeyId = null;
+      });
+    </script>
+  </body>
+</html>
